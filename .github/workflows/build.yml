@@ -1,0 +1,42 @@
+name: Build Custom RustDesk
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.75.0
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=$((Get-Item .).FullName)\vcpkg" >> $env:GITHUB_ENV
+          ./vcpkg/vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+
+      - name: Download Sciter
+        run: |
+          mkdir -p target/release
+          curl -L https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll -o target/release/sciter.dll
+
+      - name: Build
+        run: |
+          $env:VCPKG_ROOT = "$((Get-Item .).FullName)\vcpkg"
+          cargo build --release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RustDesk-Custom-Windows
+          path: target/release/rustdesk.exe
