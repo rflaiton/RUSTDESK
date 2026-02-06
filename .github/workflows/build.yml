@@ -25,9 +25,9 @@ jobs:
           choco install llvm -y
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
           
-          # Usar o vcpkg pré-instalado para as dependências críticas
+          # Usar o vcpkg pré-instalado conforme solicitado
           $vcpkg = $env:VCPKG_INSTALLATION_ROOT
-          & "$vcpkg\vcpkg.exe" install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          & "$vcpkg\vcpkg.exe" install
           echo "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
 
       - name: Download Sciter
