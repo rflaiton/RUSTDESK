@@ -15,7 +15,7 @@ jobs:
 
     steps:
     # -----------------------------
-    # Checkout
+    # Checkout do repositório
     # -----------------------------
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -23,13 +23,13 @@ jobs:
         submodules: recursive
 
     # -----------------------------
-    # LLVM (bindgen)
+    # Instalar LLVM (necessário para bindgen)
     # -----------------------------
     - name: Install LLVM
       run: choco install llvm -y
 
     # -----------------------------
-    # Rust
+    # Instalar Rust
     # -----------------------------
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
@@ -37,7 +37,7 @@ jobs:
         components: rustfmt
 
     # -----------------------------
-    # vcpkg
+    # Setup vcpkg
     # -----------------------------
     - name: Setup vcpkg
       run: |
@@ -45,14 +45,14 @@ jobs:
         C:\vcpkg\bootstrap-vcpkg.bat
 
     # -----------------------------
-    # Instalar dependências via vcpkg
+    # Instalar dependências necessárias via vcpkg
     # -----------------------------
     - name: Install vcpkg dependencies
       run: |
-        C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
+        C:\vcpkg\vcpkg.exe install opus:x64-windows-static
 
     # -----------------------------
-    # Configurar ambiente bindgen corretamente
+    # Configurar variáveis de ambiente para bindgen
     # -----------------------------
     - name: Configure bindgen environment
       shell: powershell
@@ -62,7 +62,7 @@ jobs:
         echo "PATH=C:\vcpkg\installed\x64-windows-static\bin;$env:PATH" >> $env:GITHUB_ENV
 
     # -----------------------------
-    # Gerar arquivo TOML embutido
+    # Criar arquivo TOML embutido
     # -----------------------------
     - name: Create embedded config.toml
       shell: powershell
@@ -81,7 +81,7 @@ key = "==Qfi0zaxpUOiV1bsFUZ6hXOnBVUTZHco50M1h3dDF3QyQmQilFa44WZK50MjRUViojI5V2ai
       run: cargo build --release
 
     # -----------------------------
-    # Copiar o config.toml para o target
+    # Copiar o config.toml para o release folder
     # -----------------------------
     - name: Copy config.toml to release folder
       shell: powershell
@@ -98,3 +98,4 @@ key = "==Qfi0zaxpUOiV1bsFUZ6hXOnBVUTZHco50M1h3dDF3QyQmQilFa44WZK50MjRUViojI5V2ai
         path: |
           target/release/rustdesk.exe
           target/release/config.toml
+
