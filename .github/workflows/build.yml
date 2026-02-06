@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,27 +18,35 @@ jobs:
         with:
           toolchain: 1.75.0
 
-      - name: Install Dependencies
+      - name: Setup Environment
+        shell: pwsh
         run: |
+          # Instalar LLVM para o bindgen
           choco install llvm -y
-          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          
+          # Usar o vcpkg pré-instalado para as dependências críticas
+          $vcpkg = $env:VCPKG_INSTALLATION_ROOT
+          & "$vcpkg\vcpkg.exe" install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          echo "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
 
       - name: Download Sciter
         shell: pwsh
         run: |
-          $targetDir = "target/release"
-          if (!(Test-Path $targetDir)) { New-Item -ItemType Directory -Force -Path $targetDir }
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll" -OutFile "$targetDir/sciter.dll"
+          $dir = "target\release"
+          if (!(Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir }
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll" -OutFile "$dir\sciter.dll"
 
       - name: Build
         shell: pwsh
         run: |
           $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
-          $env:LIBCLANG_PATH = "C:\Program Files\LLVM\bin"
           cargo build --release --features sciter
+        env:
+          LIBCLANG_PATH: C:\Program Files\LLVM\bin
 
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: RustDesk-Custom-Windows
+          name: RustDesk-Custom
           path: target/release/rustdesk.exe
