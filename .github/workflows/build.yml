@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,30 +18,24 @@ jobs:
         with:
           toolchain: 1.75.0
 
-      - name: Install LLVM
+      - name: Install Dependencies
         run: |
           choco install llvm -y
-          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
-
-      - name: Setup vcpkg
-        run: |
-          $vcpkg_root = "$env:VCPKG_INSTALLATION_ROOT"
-          echo "VCPKG_ROOT=$vcpkg_root" >> $env:GITHUB_ENV
-          & "$vcpkg_root\vcpkg.exe" install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
 
       - name: Download Sciter
-        run: |
-          $sciter_dir = "target\release"
-          if (!(Test-Path $sciter_dir)) { New-Item -ItemType Directory -Force -Path $sciter_dir }
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll" -OutFile "$sciter_dir\sciter.dll"
-
-      - name: Build RustDesk
         shell: pwsh
         run: |
-          $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
-          cargo build --release
-        env:
-          LIBCLANG_PATH: C:\Program Files\LLVM\bin
+          $targetDir = "target/release"
+          if (!(Test-Path $targetDir)) { New-Item -ItemType Directory -Force -Path $targetDir }
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll" -OutFile "$targetDir/sciter.dll"
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
+          $env:LIBCLANG_PATH = "C:\Program Files\LLVM\bin"
+          cargo build --release --features sciter
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
