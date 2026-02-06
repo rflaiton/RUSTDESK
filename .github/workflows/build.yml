@@ -26,13 +26,15 @@ jobs:
         cd C:\vcpkg
         git pull
         bootstrap-vcpkg.bat
-    - name: Set VCPKG paths
+    - name: Install opus explicitly
+      run: vcpkg install opus:x64-windows
+    - name: Configure bindgen + opus
       shell: powershell
       run: |
         echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
         echo "VCPKG_DEFAULT_TRIPLET=x64-windows" >> $env:GITHUB_ENV
         echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
-        echo "INCLUDE=C:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
+        echo "CLANG_ARGS=-IC:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
     - name: Build RustDesk
       run: cargo build --release
     - name: Upload artifact
