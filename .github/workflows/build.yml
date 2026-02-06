@@ -18,12 +18,20 @@ jobs:
         with:
           toolchain: 1.75.0
 
-      - name: Install vcpkg
+      - name: Setup vcpkg
         run: |
+          cd $env:GITHUB_WORKSPACE
           git clone https://github.com/microsoft/vcpkg.git
           ./vcpkg/bootstrap-vcpkg.bat
-          echo "VCPKG_ROOT=$((Get-Item .).FullName)\vcpkg" >> $env:GITHUB_ENV
+          $vcpkg_path = "$((Get-Item .).FullName)\vcpkg"
+          echo "VCPKG_ROOT=$vcpkg_path" >> $env:GITHUB_ENV
+          echo "$vcpkg_path" >> $env:GITHUB_PATH
           ./vcpkg/vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+
+      - name: Install LLVM
+        run: |
+          choco install llvm -y
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
 
       - name: Download Sciter
         run: |
@@ -34,6 +42,9 @@ jobs:
         run: |
           $env:VCPKG_ROOT = "$((Get-Item .).FullName)\vcpkg"
           cargo build --release
+        env:
+          VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
+          LIBCLANG_PATH: ${{ env.LIBCLANG_PATH }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
