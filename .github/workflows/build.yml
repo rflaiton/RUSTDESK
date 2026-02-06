@@ -1,52 +1,35 @@
-name: Build Custom RustDesk
-
+name: Build RustDesk Windows
 on:
-  workflow_dispatch:
   push:
-    branches: [ main, master ]
-
+    branches: [ main ]
+  workflow_dispatch:
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_FEATURE_FLAGS: manifests
+      CMAKE_BUILD_PARALLEL_LEVEL: 1
+      VCPKG_MAX_CONCURRENCY: 1
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.75.0
-
-      - name: Setup Environment
-        shell: pwsh
-        run: |
-          # Instalar LLVM para o bindgen
-          choco install llvm -y
-          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
-          
-          # Usar o vcpkg pré-instalado conforme solicitado
-          $vcpkg = $env:VCPKG_INSTALLATION_ROOT
-          & "$vcpkg\vcpkg.exe" install
-          echo "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
-
-      - name: Download Sciter
-        shell: pwsh
-        run: |
-          $dir = "target\release"
-          if (!(Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir }
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll" -OutFile "$dir\sciter.dll"
-
-      - name: Build
-        shell: pwsh
-        run: |
-          $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT
-          cargo build --release --features sciter
-        env:
-          LIBCLANG_PATH: C:\Program Files\LLVM\bin
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: RustDesk-Custom
-          path: target/release/rustdesk.exe
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - name: Install LLVM (bindgen)
+      run: choco install llvm -y
+    - name: Force vcpkg bootstrap
+      run: |
+        cd C:\vcpkg
+        git pull
+        bootstrap-vcpkg.bat
+    - name: Build RustDesk
+      run: cargo build --release
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rustdesk-windows
+        path: target/release/rustdesk.exe
