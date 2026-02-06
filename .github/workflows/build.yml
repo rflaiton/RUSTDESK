@@ -58,6 +58,14 @@ jobs:
         echo "CLANG_ARGS=-IC:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
         echo "INCLUDE=C:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
         echo "PATH=C:\vcpkg\installed\x64-windows\bin;$env:PATH" >> $env:GITHUB_ENV
+
+    - name: Fix opus include path
+      shell: powershell
+      run: |
+      $inc = "D:\a\RUSTDESK\RUSTDESK\vcpkg\installed\x64-windows-static\include"
+      New-Item -ItemType Directory -Force -Path "$inc\opus"
+      Copy-Item "$inc\opus_multistream.h" "$inc\opus\opus_multistream.h" -Force
+    
     # -----------------------------
     # Build RustDesk
     # -----------------------------
