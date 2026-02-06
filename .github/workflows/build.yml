@@ -67,10 +67,19 @@ jobs:
         $includeRoot = Split-Path $file.Directory.FullName
         $opusDir = Join-Path $includeRoot "opus"
 
-        New-Item -ItemType Directory -Force -Path $opusDir
-        Copy-Item $file.FullName (Join-Path $opusDir "opus_multistream.h") -Force
+        # Cria a pasta se não existir
+        if (-not (Test-Path $opusDir)) {
+            New-Item -ItemType Directory -Path $opusDir | Out-Null
+        }
 
-        Write-Host "Opus corrigido em $opusDir"
+        # Copia apenas se origem e destino forem diferentes
+        $dest = Join-Path $opusDir "opus_multistream.h"
+        if ($file.FullName -ne $dest) {
+            Copy-Item $file.FullName $dest -Force
+            Write-Host "opus_multistream.h copiado para $opusDir"
+        } else {
+            Write-Host "opus_multistream.h já está no destino, pulando..."
+        }
 
     # -----------------------------
     # Variáveis para bindgen
