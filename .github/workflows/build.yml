@@ -1,4 +1,4 @@
-name: RustDesk Windows Build (Custom Server)
+name: RustDesk Windows Build (Custom Server + Config Embutida)
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     env:
       VCPKG_ROOT: C:\vcpkg
-      VCPKG_DEFAULT_TRIPLET: x64-windows
+      VCPKG_DEFAULT_TRIPLET: x64-windows-static
 
     steps:
     # -----------------------------
@@ -49,7 +49,7 @@ jobs:
     # -----------------------------
     - name: Install vcpkg dependencies
       run: |
-        C:\vcpkg\vcpkg.exe install
+        C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
     # -----------------------------
     # Configurar ambiente bindgen corretamente
@@ -58,8 +58,21 @@ jobs:
       shell: powershell
       run: |
         echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
-        echo "INCLUDE=C:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
-        echo "PATH=C:\vcpkg\installed\x64-windows\bin;$env:PATH" >> $env:GITHUB_ENV
+        echo "INCLUDE=C:\vcpkg\installed\x64-windows-static\include" >> $env:GITHUB_ENV
+        echo "PATH=C:\vcpkg\installed\x64-windows-static\bin;$env:PATH" >> $env:GITHUB_ENV
+
+    # -----------------------------
+    # Gerar arquivo TOML embutido
+    # -----------------------------
+    - name: Create embedded config.toml
+      shell: powershell
+      run: |
+        $tomlContent = @"
+[main]
+relay_server = "rustdesk.elodatacenter.com.br"
+key = "==Qfi0zaxpUOiV1bsFUZ6hXOnBVUTZHco50M1h3dDF3QyQmQilFa44WZK50MjRUViojI5V2aiwiIiojIpBXYiwiIyJmLt92YuIXZ05WZjFGdhR2bsVmLrNXZkR3c1JnI6ISehxWZyJCLiInYu02bj5iclRnblNWY0FGZvxWZus2clRGdzVnciojI0N3boJye"
+"@
+        Set-Content -Path "$env:GITHUB_WORKSPACE/config.toml" -Value $tomlContent -Encoding UTF8
 
     # -----------------------------
     # Build RustDesk (Release)
@@ -68,10 +81,20 @@ jobs:
       run: cargo build --release
 
     # -----------------------------
-    # Upload EXE portátil
+    # Copiar o config.toml para o target
+    # -----------------------------
+    - name: Copy config.toml to release folder
+      shell: powershell
+      run: |
+        Copy-Item "$env:GITHUB_WORKSPACE/config.toml" "target/release/config.toml" -Force
+
+    # -----------------------------
+    # Upload EXE portátil com config embutida
     # -----------------------------
     - name: Upload EXE
       uses: actions/upload-artifact@v4
       with:
         name: rustdesk-portable
-        path: target/release/*.exe
+        path: |
+          target/release/rustdesk.exe
+          target/release/config.toml
